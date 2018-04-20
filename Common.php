@@ -43,6 +43,30 @@ class PageWriter
 		echo("<script id='scriptHeader' type='text/javascript' src='Header.js'></script>");
 	}
 
+	public static function licenseVerifyForProductID($productIDToVerify)
+	{
+		$session = $_SESSION["Session"];
+		$userLoggedIn = $session->user;
+		$licenses = $userLoggedIn->licenses;
+		$isUserLicensedForProduct = false;
+		foreach ($licenses as $license)
+		{
+			$licenseProductID = $license->productID;
+			if ($licenseProductID == $productIDToVerify)
+			{
+				$isUserLicensedForProduct = true;
+				break;
+			}
+		}
+		if ($isUserLicensedForProduct == false)
+		{
+			echo "You do not yet have a license to access this content.  ";
+			echo "You can buy a license by clicking the link below.<br />";
+			echo "<a href='../../Product.php?productID=" . $productIDToVerify . "'>View Product</a>";
+			die();			
+		}
+	}
+
 	public static function sessionVerify()
 	{
 		if (isset($_SESSION["Session"]) == false)
@@ -361,11 +385,11 @@ class PersistenceClientMySQL
 		$queryCommand = mysqli_prepare($databaseConnection, $queryText);
 		$queryCommand->bind_param("i", $productID);
 		$queryCommand->execute();
-		$queryCommand->bind_result($productID, $name, $imagePath, $price);
+		$queryCommand->bind_result($productID, $name, $imagePath, $price, $contentPath);
 
 		while ($queryCommand->fetch())
 		{
-			$returnValue = new Product($productID, $name, $imagePath, $price);
+			$returnValue = new Product($productID, $name, $imagePath, $price, $contentPath);
 			break;
 		}
 
@@ -383,11 +407,11 @@ class PersistenceClientMySQL
 		$queryText = "select * from Product";
 		$queryCommand = mysqli_prepare($databaseConnection, $queryText);
 		$queryCommand->execute();
-		$queryCommand->bind_result($productID, $name, $imagePath, $price);
+		$queryCommand->bind_result($productID, $name, $imagePath, $price, $contentPath);
 
 		while ($queryCommand->fetch())
 		{
-			$product = new Product($productID, $name, $imagePath, $price);
+			$product = new Product($productID, $name, $imagePath, $price, $contentPath);
 			$returnValues[$productID] = $product;
 		}
 
@@ -779,21 +803,7 @@ class PaypalClientData
 	}
 }
 
-class Product
-{
-	public $productID;
-	public $name;
-	public $imagePath;
-	public $price;
-
-	public function __construct($productID, $name, $imagePath, $price)
-	{
-		$this->productID = $productID;
-		$this->name = $name;
-		$this->imagePath = $imagePath;
-		$this->price = $price;
-	}
-}
+include("Classes/Product.php");
 
 class Session
 {
